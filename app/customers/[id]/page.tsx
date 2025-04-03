@@ -29,11 +29,17 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-type CustomerDetail = {
+import { AppType } from '@/app/api/v1/routes';
+import { hc } from "hono/client";
+import { CustomerDTO } from '@/app/dto/types';
+
+// フロントエンド用のカスタム型
+type CustomerDetailData = {
   customerId: string;
   name: string;
   phoneNumber?: string;
-  variables?: Record<string, string>;
+  // Record型として変数を管理（使いやすいように変換）
+  variables: Record<string, string>;
 };
 
 type Call = {
@@ -51,7 +57,7 @@ export default function CustomerDetail() {
   const router = useRouter();
   const customerId = params.id as string;
   
-  const [customer, setCustomer] = useState<CustomerDetail | null>(null);
+  const [customer, setCustomer] = useState<CustomerDetailData>();
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -61,23 +67,31 @@ export default function CustomerDetail() {
   }>({ name: '', phoneNumber: '' });
   const [variableDialog, setVariableDialog] = useState(false);
   const [newVariable, setNewVariable] = useState({ key: '', value: '' });
+  const client = hc<AppType>('/').api.v1;
   
   // 顧客情報を取得
   const fetchCustomer = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/v1/customers/${customerId}`);
+      const response = await client.customers[':id'].$get({ param: { id: customerId } });
       const data = await response.json();
       
-      if (data.success) {
-        setCustomer(data.data.customer);
-        setCustomerForm({
-          name: data.data.customer.name,
-          phoneNumber: data.data.customer.phoneNumber || '',
-        });
-      } else {
-        console.error('顧客データの取得に失敗しました:', data.error);
-      }
+      // APIから返されるDTOを変換
+      // variables配列を使いやすいRecordに変換
+      const variablesRecord = data.customer.variables.reduce((acc: Record<string, string>, v: {key: string, value: string}) => {
+        acc[v.key] = v.value;
+        return acc;
+      }, {});
+      
+      setCustomer({
+        ...data.customer,
+        variables: variablesRecord
+      });
+      
+      setCustomerForm({
+        name: data.customer.name,
+        phoneNumber: data.customer.phoneNumber || ''
+      });
     } catch (error) {
       console.error('顧客データの取得中にエラーが発生しました:', error);
     } finally {
@@ -88,14 +102,9 @@ export default function CustomerDetail() {
   // 顧客のコール履歴を取得
   const fetchCustomerCalls = async () => {
     try {
-      const response = await fetch(`/api/v1/customers/${customerId}/calls`);
+      const response = await client.customers[':id'].calls.$get({ param: { id: customerId } });
       const data = await response.json();
-      
-      if (data.success) {
-        setCalls(data.data.calls);
-      } else {
-        console.error('コールデータの取得に失敗しました:', data.error);
-      }
+      setCalls(data.calls);
     } catch (error) {
       console.error('コールデータの取得中にエラーが発生しました:', error);
     }
@@ -111,23 +120,18 @@ export default function CustomerDetail() {
     if (!customerForm.name) return;
     
     try {
-      const response = await fetch(`/api/v1/customers/${customerId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const response = await client.customers[':id'].$put({
+        param: { id: customerId },
+        json: {
           name: customerForm.name,
           phoneNumber: customerForm.phoneNumber || undefined,
           variables: customer?.variables,
-        }),
+        }
       });
       
       const data = await response.json();
-      if (data.success) {
-        setEditMode(false);
-        fetchCustomer();
-      } else {
-        console.error('顧客更新に失敗しました:', data.error);
-      }
+      setEditMode(false);
+      fetchCustomer();
     } catch (error) {
       console.error('顧客更新中にエラーが発生しました:', error);
     }
@@ -167,20 +171,14 @@ export default function CustomerDetail() {
   // コール予約
   const handleRequestCall = async () => {
     try {
-      const response = await fetch('/api/v1/calls', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerId,
-        }),
+      const response = await client.calls.$post({
+        json: {
+          customerId
+        }
       });
       
       const data = await response.json();
-      if (data.success) {
-        fetchCustomerCalls();
-      } else {
-        console.error('コール予約に失敗しました:', data.error);
-      }
+      fetchCustomerCalls();
     } catch (error) {
       console.error('コール予約中にエラーが発生しました:', error);
     }

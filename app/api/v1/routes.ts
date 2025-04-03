@@ -25,6 +25,8 @@ import {
 import logger from "@/lib/logger";
 import { Call } from "@/app/models/Call";
 import { ContentfulStatusCode } from "hono/utils/http-status";
+import { CustomerInputSchema, CallInputSchema } from "../../dto/types";
+import { toCustomerDTO, toCustomerDTOList, toCallDTO, toCallDTOList } from "../../dto/mappers";
 
 // リポジトリのインスタンスを作成
 const customerRepository = new CustomerRepository();
@@ -33,12 +35,8 @@ const callRepository = new CallRepository();
 // ファクトリーを作成
 const factory = createFactory();
 
-// 顧客作成のスキーマ
-const CreateCustomerSchema = z.object({
-  name: z.string().min(1, "顧客名は必須です"),
-  phoneNumber: z.string().optional(),
-  variables: z.record(z.string()).optional(),
-});
+// 顧客作成のスキーマ（DTOから再利用）
+const CreateCustomerSchema = CustomerInputSchema;
 
 // 顧客作成ハンドラー
 export const createCustomerHandler = factory.createHandlers(
@@ -61,7 +59,7 @@ export const getAllCustomersHandler = factory.createHandlers(async (c) => {
   const customers = await useCase.execute();
   return c.json({
     message: "顧客一覧の取得に成功しました",
-    customers,
+    customers: toCustomerDTOList(customers),
   });
 });
 
@@ -82,17 +80,13 @@ export const getCustomerHandler = factory.createHandlers(
 
     return c.json({
       message: "顧客の取得に成功しました",
-      customer,
+      customer: toCustomerDTO(customer),
     });
   }
 );
 
-// 顧客更新のスキーマ
-const UpdateCustomerSchema = z.object({
-  name: z.string().min(1, "顧客名は必須です"),
-  phoneNumber: z.string().optional(),
-  variables: z.record(z.string()).optional(),
-});
+// 顧客更新のスキーマ（DTOから再利用）
+const UpdateCustomerSchema = CustomerInputSchema;
 
 // 顧客更新ハンドラー
 export const updateCustomerHandler = factory.createHandlers(

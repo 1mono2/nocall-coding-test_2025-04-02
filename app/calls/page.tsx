@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { hc } from 'hono/client';
+import { AppType } from '@/app/api/v1/routes';
+import { CallDTO } from '@/app/dto/types';
 import {
   Card,
   CardContent,
@@ -20,14 +23,8 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 
-type Call = {
-  callId: string;
-  customerId: string;
-  status: 'queued' | 'in-progress' | 'completed' | 'canceled' | 'failed';
-  requestedAt: string;
-  startedAt?: string;
-  endedAt?: string;
-  durationSec?: number;
+// CallDTO型を拡張して使用
+type Call = CallDTO & {
   customer?: {
     name: string;
   };
@@ -37,20 +34,15 @@ export default function CallsPage() {
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState<Record<string, { name: string }>>({});
-  const router = useRouter();
+  const client = hc<AppType>('/').api.v1;
 
   // コール一覧を取得
   const fetchCalls = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/v1/calls');
+      const response = await client.calls.$get();
       const data = await response.json();
-      
-      if (data.success) {
-        setCalls(data.data.calls);
-      } else {
-        console.error('コールデータの取得に失敗しました:', data.error);
-      }
+      setCalls(data.calls);
     } catch (error) {
       console.error('コールデータの取得中にエラーが発生しました:', error);
     } finally {
@@ -61,16 +53,14 @@ export default function CallsPage() {
   // 顧客情報を取得（顧客名表示用）
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/v1/customers');
+      const response = await client.customers.$get();
       const data = await response.json();
       
-      if (data.success) {
-        const customerMap: Record<string, { name: string }> = {};
-        data.data.customers.forEach((customer: { customerId: string; name: string }) => {
-          customerMap[customer.customerId] = { name: customer.name };
-        });
-        setCustomers(customerMap);
-      }
+      const customerMap: Record<string, { name: string }> = {};
+      data.customers.forEach((customer: { customerId: string; name: string }) => {
+        customerMap[customer.customerId] = { name: customer.name };
+      });
+      setCustomers(customerMap);
     } catch (error) {
       console.error('顧客データの取得中にエラーが発生しました:', error);
     }
@@ -84,15 +74,19 @@ export default function CallsPage() {
   // コールステータスを更新する関数
   const updateCallStatus = async (callId: string, action: 'start' | 'complete' | 'cancel') => {
     try {
-      const response = await fetch(`/api/v1/calls/${callId}/${action}`, {
-        method: 'POST',
-      });
+      // アクションによって呼び出すメソッドを切り替え
+      let response;
+      if (action === 'start') {
+        response = await client.calls[':id'].start.$post({ param: { id: callId } });
+      } else if (action === 'complete') {
+        response = await client.calls[':id'].complete.$post({ param: { id: callId } });
+      } else if (action === 'cancel') {
+        response = await client.calls[':id'].cancel.$post({ param: { id: callId } });
+      }
       
-      const data = await response.json();
-      if (data.success) {
+      if (response) {
+        const data = await response.json();
         fetchCalls(); // コール一覧を再取得して表示を更新
-      } else {
-        console.error(`コールの${action}に失敗しました:`, data.error);
       }
     } catch (error) {
       console.error(`コールの${action}中にエラーが発生しました:`, error);
