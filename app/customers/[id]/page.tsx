@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { Trash } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -372,11 +373,12 @@ export default function CustomerDetail() {
                         <TableCell>{value}</TableCell>
                         <TableCell className="text-right">
                           <Button
-                            variant="destructive"
-                            size="sm"
+                            size="icon"
+                            className="bg-transparent hover:bg-red-100"
                             onClick={() => handleDeleteVariable(key)}
+                            title="変数を削除"
                           >
-                            削除
+                            <Trash className="h-4 w-4 text-red-500" />
                           </Button>
                         </TableCell>
                       </TableRow>

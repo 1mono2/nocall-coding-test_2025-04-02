@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { hc } from 'hono/client';
 import { AppType } from '@/app/api/v1/routes';
+import { Trash, Pencil } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -175,16 +176,20 @@ export default function Home() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
-                          variant="outline"
+                          size="icon"
+                          className="bg-transparent hover:bg-gray-200"
                           onClick={() => router.push(`/customers/${customer.customerId}`)}
+                          title="詳細を表示"
                         >
-                          詳細
+                          <Pencil className="h-4 w-4 text-gray-900" />
                         </Button>
                         <Button
-                          variant="destructive"
+                          size="icon"
+                          className="bg-transparent hover:bg-red-100"
                           onClick={() => handleDeleteCustomer(customer.customerId)}
+                          title="顧客を削除"
                         >
-                          削除
+                          <Trash className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
                     </TableCell>
