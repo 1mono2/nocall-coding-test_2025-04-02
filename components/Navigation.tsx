@@ -14,19 +14,19 @@ const Navigation = () => {
   ];
 
   return (
-    <nav className="bg-white dark:bg-gray-950 border-b p-4">
+    <nav className="bg-background border-b p-4">
       <div className="container mx-auto flex items-center justify-between">
-        <div className="font-bold text-xl dark:text-white">AIコール管理システム</div>
+        <div className="font-bold text-xl text-foreground">AIコール管理システム</div>
         <div className="flex items-center gap-6">
           {navItems.map((item) => (
             <Link 
               key={item.href} 
               href={item.href}
               className={cn(
-                'hover:text-blue-700 dark:hover:text-blue-400 transition-colors',
+                'hover:text-primary dark:hover:text-primary/80 transition-colors',
                 pathname === item.href 
-                  ? 'font-semibold text-blue-600 dark:text-blue-400' 
-                  : 'text-gray-600 dark:text-gray-300'
+                  ? 'font-semibold text-primary' 
+                  : 'text-muted-foreground'
               )}
             >
               {item.name}

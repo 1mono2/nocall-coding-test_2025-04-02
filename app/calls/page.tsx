@@ -5,21 +5,7 @@ import Link from 'next/link';
 import { hc } from 'hono/client';
 import { AppType } from '@/app/api/v1/routes';
 import { CallDTO } from '@/app/dto/types';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+// CardとTableコンポーネントのインポートを削除
 import { Button } from '@/components/ui/button';
 
 // CallDTO型を拡張して使用
@@ -96,17 +82,17 @@ export default function CallsPage() {
   const getStatusColorClass = (status: string) => {
     switch (status) {
       case 'queued':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200';
       case 'in-progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200';
       case 'canceled':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
       case 'failed':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
       default:
-        return 'bg-gray-100';
+        return 'bg-gray-100 dark:bg-gray-800';
     }
   };
   
@@ -153,44 +139,44 @@ export default function CallsPage() {
   };
 
   return (
-    <div>
-      <Card>
-        <CardHeader>
-          <CardTitle>コール一覧</CardTitle>
-          <CardDescription>登録されているすべてのコールを表示します</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-8">読み込み中...</div>
-          ) : calls.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              コールデータがありません。顧客詳細画面から新しいコールを予約してください。
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>顧客名</TableHead>
-                  <TableHead>ステータス</TableHead>
-                  <TableHead>予約日時</TableHead>
-                  <TableHead>開始時間</TableHead>
-                  <TableHead>終了時間</TableHead>
-                  <TableHead>通話時間</TableHead>
-                  <TableHead className="text-right">アクション</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">コール一覧</h1>
+        <p className="text-muted-foreground">登録されているすべてのコールを表示します</p>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-8 text-foreground">読み込み中...</div>
+      ) : calls.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground bg-card border rounded-lg p-6">
+          コールデータがありません。顧客詳細画面から新しいコールを予約してください。
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">顧客名</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">ステータス</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">予約日時</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">開始時間</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">終了時間</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">通話時間</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">アクション</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
                 {calls.map((call) => (
-                  <TableRow key={call.callId}>
-                    <TableCell>
+                  <tr key={call.callId} className="hover:bg-muted/50">
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">
                       <Link 
                         href={`/customers/${call.customerId}`}
-                        className="text-blue-600 hover:underline"
+                        className="text-primary hover:underline"
                       >
                         {customers[call.customerId]?.name || '不明な顧客'}
                       </Link>
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground/80">
                       <span className={`px-2 py-1 rounded-full text-xs ${getStatusColorClass(call.status)}`}>
                         {{
                           queued: '予約済み',
@@ -200,23 +186,22 @@ export default function CallsPage() {
                           failed: '失敗',
                         }[call.status]}
                       </span>
-                    </TableCell>
-                    <TableCell>{formatDate(call.requestedAt)}</TableCell>
-                    <TableCell>{call.startedAt ? formatDate(call.startedAt) : '-'}</TableCell>
-                    <TableCell>{call.endedAt ? formatDate(call.endedAt) : '-'}</TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground/80">{formatDate(call.requestedAt)}</td>
+                    <td className="px-4 py-3 text-sm text-foreground/80">{call.startedAt ? formatDate(call.startedAt) : '-'}</td>
+                    <td className="px-4 py-3 text-sm text-foreground/80">{call.endedAt ? formatDate(call.endedAt) : '-'}</td>
+                    <td className="px-4 py-3 text-sm text-foreground/80">
                       {call.durationSec ? `${call.durationSec}秒` : '-'}
-                    </TableCell>
-                    <TableCell className="text-right">
+                    </td>
+                    <td className="px-4 py-3 text-right">
                       {renderActionButtons(call)}
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

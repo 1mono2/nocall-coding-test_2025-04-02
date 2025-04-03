@@ -3,23 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Trash } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Link from 'next/link';
 
 import { AppType } from '@/app/api/v1/routes';
 import { hc } from "hono/client";
@@ -169,17 +156,17 @@ export default function CustomerDetail() {
   const getStatusColorClass = (status: string) => {
     switch (status) {
       case 'queued':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200';
       case 'in-progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200';
       case 'canceled':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
       case 'failed':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
       default:
-        return 'bg-gray-100';
+        return 'bg-gray-100 dark:bg-gray-800';
     }
   };
   
@@ -204,224 +191,233 @@ export default function CustomerDetail() {
     );
   }
   
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{customer.name}</h1>
-        <Button onClick={() => router.push('/')}>戻る</Button>
+  if (!customer) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4 dark:text-white">読み込み中...</h2>
+          <Button onClick={() => router.push('/')} className="mt-4">戻る</Button>
+        </div>
       </div>
-      
-      <Tabs defaultValue="details">
-        <TabsList>
+    );
+  }
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto pb-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-foreground">{customer.name}</h1>
+        <Button onClick={() => router.push('/')} variant="outline">戻る</Button>
+      </div>
+
+      <Tabs defaultValue="details" className="w-full">
+        <TabsList className="mb-4">
           <TabsTrigger value="details">顧客情報</TabsTrigger>
           <TabsTrigger value="calls">コール履歴</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="details" className="space-y-6 mt-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>顧客詳細</CardTitle>
-                <CardDescription>顧客の基本情報</CardDescription>
+
+        <TabsContent value="details">
+          <div className="bg-card text-card-foreground rounded-lg border shadow-sm overflow-hidden">
+
+            <div className="p-4 sm:p-6 border-b">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-foreground">基本情報</h2>
+                {!editMode ? (
+                  <Button onClick={() => setEditMode(true)} variant="outline" size="sm" className="dark:border-gray-700">
+                    編集
+                  </Button>
+                ) : null}
               </div>
-              {!editMode ? (
-                <Button onClick={() => setEditMode(true)}>編集</Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setEditMode(false)}>キャンセル</Button>
-                  <Button onClick={handleUpdateCustomer}>保存</Button>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent>
+            </div>
+
+            <div className="p-4 sm:p-6">
               {!editMode ? (
                 <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">顧客ID</p>
-                    <p>{customer.customerId}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">顧客名</p>
-                    <p>{customer.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">電話番号</p>
-                    <p>{customer.phoneNumber || '-'}</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">顧客ID</p>
+                      <p className="mt-1 text-foreground">{customerId}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">顧客名</p>
+                      <p className="mt-1 text-foreground">{customer.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">電話番号</p>
+                      <p className="mt-1 text-foreground">{customer.phoneNumber || '-'}</p>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label htmlFor="name" className="text-sm font-medium">
-                      顧客名 *
-                    </label>
+                <form onSubmit={handleUpdateCustomer} className="space-y-4">
+                  <div className="grid w-full items-center gap-2">
+                    <Label htmlFor="name" className="text-foreground/80">顧客名 *</Label>
                     <Input
                       id="name"
                       value={customer.name}
                       onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
                       placeholder="顧客名を入力"
+                      className="bg-background border-input"
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="phoneNumber" className="text-sm font-medium">
-                      電話番号
-                    </label>
+                  <div className="grid w-full items-center gap-2">
+                    <Label htmlFor="phoneNumber" className="text-gray-700 dark:text-gray-300">電話番号</Label>
                     <Input
                       id="phoneNumber"
                       value={customer.phoneNumber}
                       onChange={(e) => setCustomer({ ...customer, phoneNumber: e.target.value })}
                       placeholder="電話番号（任意）"
+                      className="bg-background border-input"
                     />
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>カスタム変数</CardTitle>
-                <CardDescription>顧客固有の変数</CardDescription>
-              </div>
-              <Dialog open={variableDialog} onOpenChange={setVariableDialog}>
-                <DialogTrigger asChild>
-                  <Button>変数を追加</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>新規変数を追加</DialogTitle>
-                    <DialogDescription>
-                      変数名と値を入力してください
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <label htmlFor="varKey" className="text-sm font-medium">
-                        変数名 *
-                      </label>
-                      <Input
-                        id="varKey"
-                        value={newVariable.key}
-                        onChange={(e) => setNewVariable({ ...newVariable, key: e.target.value })}
-                        placeholder="例: 会社名"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="varValue" className="text-sm font-medium">
-                        値
-                      </label>
-                      <Input
-                        id="varValue"
-                        value={newVariable.value}
-                        onChange={(e) => setNewVariable({ ...newVariable, value: e.target.value })}
-                        placeholder="例: 株式会社ABC"
-                      />
-                    </div>
-                    <div className="flex justify-end gap-3 pt-2">
-                      <Button type="button" variant="outline" onClick={() => setVariableDialog(false)}>
-                        キャンセル
-                      </Button>
-                      <Button type="button" onClick={handleAddVariable}>
-                        追加
-                      </Button>
-                    </div>
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Button type="button" variant="outline" onClick={() => setEditMode(false)}>
+                      キャンセル
+                    </Button>
+                    <Button type="submit">
+                      保存
+                    </Button>
                   </div>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent>
-              {!customer.variables || Object.keys(customer.variables).length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  変数はまだありません。「変数を追加」ボタンから変数を登録してください。
+                </form>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6 bg-card text-card-foreground rounded-lg border shadow-sm overflow-hidden">
+            <div className="p-4 sm:p-6 border-b">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-foreground">変数</h2>
+                <Dialog open={variableDialog} onOpenChange={setVariableDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">変数を追加</Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-background border-border">
+                    <DialogHeader>
+                      <DialogTitle className="text-foreground">新規変数を追加</DialogTitle>
+                      <DialogDescription className="text-muted-foreground">
+                        変数名と値を入力してください
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="pt-4 border-t">
+                      <div className="flex flex-col space-y-4">
+                        <div className="grid w-full items-center gap-2">
+                          <Label htmlFor="variable-name" className="text-foreground/80">変数名</Label>
+                          <Input
+                            id="variable-name"
+                            value={newVariable.key}
+                            onChange={(e) => setNewVariable({ ...newVariable, key: e.target.value })}
+                            className="bg-background border-input"
+                          />
+                        </div>
+                        <div className="grid w-full items-center gap-2">
+                          <Label htmlFor="variable-value" className="text-foreground/80">値</Label>
+                          <Input
+                            id="variable-value"
+                            value={newVariable.value}
+                            onChange={(e) => setNewVariable({ ...newVariable, value: e.target.value })}
+                            className="bg-background border-input"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-3 pt-2">
+                          <Button 
+                            onClick={handleAddVariable} 
+                            disabled={!newVariable.key || !newVariable.value}
+                          >
+                            追加
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6">
+              {loading ? (
+                <p className="text-muted-foreground">読み込み中...</p>
+              ) : customer.variables && customer.variables.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {customer.variables.map((variable) => (
+                    <div
+                      key={variable.key}
+                      className="flex items-center justify-between bg-muted p-3 rounded-md border"
+                    >
+                      <div className="text-foreground">
+                        <span className="font-medium">{variable.key}</span>: {variable.value}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteVariable(variable.key)}
+                        className="hover:bg-muted/50 dark:hover:bg-gray-800"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>変数名</TableHead>
-                      <TableHead>値</TableHead>
-                      <TableHead className="text-right">アクション</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {customer.variables.map(({key, value}) => (
-                      <TableRow key={key}>
-                        <TableCell className="font-medium">{key}</TableCell>
-                        <TableCell>{value}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="icon"
-                            className="bg-transparent hover:bg-red-100"
-                            onClick={() => handleDeleteVariable(key)}
-                            title="変数を削除"
-                          >
-                            <Trash className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <p className="text-muted-foreground">変数がありません</p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
         
         <TabsContent value="calls" className="mt-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>コール履歴</CardTitle>
-                <CardDescription>この顧客のコール履歴</CardDescription>
+          <div className="bg-card text-card-foreground rounded-lg border shadow-sm overflow-hidden">
+            <div className="p-4 sm:p-6 border-b">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-foreground">コール履歴</h2>
+                <Button onClick={handleRequestCall} variant="outline">新規コール予約</Button>
               </div>
-              <Button onClick={handleRequestCall}>新規コール予約</Button>
-            </CardHeader>
-            <CardContent>
+            </div>
+            
+            <div className="p-4 sm:p-6">
               {calls.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  コール履歴はまだありません。「新規コール予約」ボタンからコールを予約してください。
+                <div className="text-center py-8 text-muted-foreground bg-muted rounded-lg p-6 border">
+                  コール履歴はありません。「新規コール予約」ボタンからコールを予約してください。
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ステータス</TableHead>
-                      <TableHead>予約日時</TableHead>
-                      <TableHead>開始時間</TableHead>
-                      <TableHead>終了時間</TableHead>
-                      <TableHead>通話時間</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {calls.map((call) => (
-                      <TableRow key={call.callId}>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColorClass(call.status)}`}>
-                            {{
-                              queued: '予約済み',
-                              'in-progress': '進行中',
-                              completed: '完了',
-                              canceled: 'キャンセル',
-                              failed: '失敗',
-                            }[call.status]}
-                          </span>
-                        </TableCell>
-                        <TableCell>{formatDate(call.requestedAt)}</TableCell>
-                        <TableCell>{call.startedAt ? formatDate(call.startedAt) : '-'}</TableCell>
-                        <TableCell>{call.endedAt ? formatDate(call.endedAt) : '-'}</TableCell>
-                        <TableCell>
-                          {call.durationSec ? `${call.durationSec}秒` : '-'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b-2 border-border">
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">ステータス</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">予約日時</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">開始時間</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">終了時間</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">通話時間</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {calls.map((call) => (
+                        <tr key={call.callId} className="hover:bg-muted/50">
+                          <td className="px-4 py-3 text-sm text-foreground/80">
+                            <span className={`px-2 py-1 rounded-full text-xs ${getStatusColorClass(call.status)}`}>
+                              {{
+                                queued: '予約済み',
+                                'in-progress': '進行中',
+                                completed: '完了',
+                                canceled: 'キャンセル',
+                                failed: '失敗',
+                              }[call.status]}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-foreground/80">{formatDate(call.requestedAt)}</td>
+                          <td className="px-4 py-3 text-sm text-foreground/80">{call.startedAt ? formatDate(call.startedAt) : '-'}</td>
+                          <td className="px-4 py-3 text-sm text-foreground/80">{call.endedAt ? formatDate(call.endedAt) : '-'}</td>
+                          <td className="px-4 py-3 text-sm text-foreground/80">
+                            {call.durationSec ? `${call.durationSec}秒` : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

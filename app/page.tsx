@@ -82,23 +82,23 @@ export default function Home() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold dark:text-white">顧客一覧</h1>
-          <p className="text-gray-500 dark:text-gray-400">登録されているすべての顧客を表示します</p>
+          <h1 className="text-2xl font-bold text-foreground">顧客一覧</h1>
+          <p className="text-muted-foreground">登録されているすべての顧客を表示します</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>顧客を追加</Button>
           </DialogTrigger>
-          <DialogContent className="dark:bg-gray-900 dark:border-gray-800">
+          <DialogContent className="bg-background border-border">
             <DialogHeader>
-              <DialogTitle className="dark:text-white">新規顧客を追加</DialogTitle>
-              <DialogDescription className="dark:text-gray-400">
+              <DialogTitle className="text-foreground">新規顧客を追加</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 新しい顧客の情報を入力してください
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateCustomer} className="space-y-4 pt-4">
               <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium dark:text-gray-300">
+                <label htmlFor="name" className="text-sm font-medium text-foreground/80">
                   顧客名 *
                 </label>
                 <Input
@@ -106,7 +106,7 @@ export default function Home() {
                   value={newCustomer.name}
                   onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
                   placeholder="顧客名を入力"
-                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="bg-background border-input"
                   required
                 />
               </div>
@@ -119,11 +119,11 @@ export default function Home() {
                   value={newCustomer.phoneNumber}
                   onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
                   placeholder="電話番号を入力"
-                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="bg-background border-input"
                 />
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   キャンセル
                 </Button>
                 <Button type="submit">登録する</Button>
@@ -134,28 +134,28 @@ export default function Home() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-8 dark:text-white">読み込み中...</div>
+        <div className="flex justify-center py-8 text-foreground">読み込み中...</div>
       ) : customers.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-950 border dark:border-gray-800 rounded-lg p-6">
+        <div className="text-center py-8 text-muted-foreground bg-card border rounded-lg p-6">
           顧客データがありません。「顧客を追加」ボタンから新しい顧客を登録してください。
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-800">
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">顧客名</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">電話番号</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">カスタム変数</th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-gray-600 dark:text-gray-300">アクション</th>
+              <tr className="border-b border-border">
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">顧客名</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">電話番号</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">カスタム変数</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">アクション</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <tbody className="divide-y divide-border">
                 {customers.map((customer) => (
-                  <tr key={customer.customerId} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{customer.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{customer.phoneNumber || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                  <tr key={customer.customerId} className="hover:bg-muted/50">
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">{customer.name}</td>
+                    <td className="px-4 py-3 text-sm text-foreground/80">{customer.phoneNumber || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-foreground/80">
                       {customer.variables && Object.keys(customer.variables).length > 0
                         ? Object.keys(customer.variables).length + '個の変数'
                         : '変数なし'}
@@ -167,18 +167,18 @@ export default function Home() {
                           variant="ghost"
                           onClick={() => router.push(`/customers/${customer.customerId}`)}
                           title="詳細を表示"
-                          className="h-8 w-8 dark:text-gray-300 hover:bg-gray-800/30"
+                          className="h-8 w-8 hover:bg-muted-foreground/20 dark:hover:bg-muted-foreground/20"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-4 w-4 text-foreground/80" />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
                           onClick={() => handleDeleteCustomer(customer.customerId)}
                           title="顧客を削除"
-                          className="h-8 w-8 bg-transparent  hover:bg-red-600/30"
+                          className="h-8 w-8 bg-transparent hover:bg-destructive/20 dark:hover:bg-destructive/20"
                         >
-                          <Trash className="h-4 w-4 text-red-500" />
+                          <Trash className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </td>
