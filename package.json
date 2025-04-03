@@ -20,7 +20,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.1.1",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
     "@eslint/eslintrc": "^3"

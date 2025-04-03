@@ -100,6 +100,50 @@ export default function Home() {
             <CardTitle>顧客一覧</CardTitle>
             <CardDescription>登録されているすべての顧客を表示します</CardDescription>
           </div>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>顧客を追加</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>新規顧客を追加</DialogTitle>
+                <DialogDescription>
+                  新しい顧客の情報を入力してください
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateCustomer} className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-medium">
+                    顧客名 *
+                  </label>
+                  <Input
+                    id="name"
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                    placeholder="顧客名を入力"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="phone" className="text-sm font-medium">
+                    電話番号
+                  </label>
+                  <Input
+                    id="phone"
+                    value={newCustomer.phoneNumber}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
+                    placeholder="電話番号（任意）"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                    キャンセル
+                  </Button>
+                  <Button type="submit">登録する</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -151,50 +195,6 @@ export default function Home() {
           )}
         </CardContent>
       </Card>
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>顧客を追加</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>新規顧客を追加</DialogTitle>
-                <DialogDescription>
-                  新しい顧客の情報を入力してください
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCreateCustomer} className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">
-                    顧客名 *
-                  </label>
-                  <Input
-                    id="name"
-                    value={newCustomer.name}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                    placeholder="顧客名を入力"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="phone" className="text-sm font-medium">
-                    電話番号
-                  </label>
-                  <Input
-                    id="phone"
-                    value={newCustomer.phoneNumber}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
-                    placeholder="電話番号（任意）"
-                  />
-                </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                    キャンセル
-                  </Button>
-                  <Button type="submit">登録する</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
     </div>
   );
 }
