@@ -5,7 +5,6 @@ import { createFactory } from "hono/factory";
 import { z } from "zod";
 import { CustomerRepository } from "../../repositories/CustomerRepository";
 import { CallRepository } from "../../repositories/CallRepository";
-import { Customer } from "../../models/Customer";
 import {
   CreateCustomerUseCase,
   GetCustomerUseCase,
@@ -119,7 +118,10 @@ export const deleteCustomerHandler = factory.createHandlers(
   async (c) => {
     const { id } = c.req.valid("param");
 
-    const useCase = new DeleteCustomerUseCase(customerRepository, callRepository);
+    const useCase = new DeleteCustomerUseCase(
+      customerRepository,
+      callRepository
+    );
     const success = await useCase.execute(id);
 
     if (!success) {
