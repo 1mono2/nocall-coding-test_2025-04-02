@@ -1,4 +1,4 @@
-import { Customer } from "../models/Customer";
+import { Customer, CustomerVariable } from "../models/Customer";
 import { ICustomerRepository } from "../repositories/ICustomerRepository";
 
 /**
@@ -10,16 +10,14 @@ export class CreateCustomerUseCase {
   public async execute(input: {
     name: string;
     phoneNumber?: string;
-    variables?: Record<string, string>;
+    variables?: { key: string; value: string }[];
   }): Promise<string> {
     const customer = Customer.create(input.name, input.phoneNumber);
 
     // 変数を設定
-    if (input.variables) {
-      Object.entries(input.variables).forEach(([key, value]) => {
-        customer.setVariable(key, value);
-      });
-    }
+    input.variables?.forEach((variable) => {
+      customer.setVariable(variable.key, variable.value);
+    });
 
     await this.customerRepo.save(customer);
     return customer.customerId;
@@ -58,7 +56,7 @@ export class UpdateCustomerUseCase {
     customerId: string;
     name: string;
     phoneNumber?: string;
-    variables?: Record<string, string>;
+    variables?: { key: string; value: string }[];
   }): Promise<boolean> {
     const customer = await this.customerRepo.findById(input.customerId);
 
@@ -71,15 +69,10 @@ export class UpdateCustomerUseCase {
       input.customerId,
       input.name,
       input.phoneNumber,
-      customer.getAllVariables()
+      input.variables?.map((variable) =>
+        CustomerVariable.create(input.customerId, variable.key, variable.value)
+      )
     );
-
-    // 変数を設定
-    if (input.variables) {
-      Object.entries(input.variables).forEach(([key, value]) => {
-        updatedCustomer.setVariable(key, value);
-      });
-    }
 
     await this.customerRepo.save(updatedCustomer);
     return true;

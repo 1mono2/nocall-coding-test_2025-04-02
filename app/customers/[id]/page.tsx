@@ -86,14 +86,10 @@ export default function CustomerDetail() {
     try {      
       const response = await client.customers[':id'].$put({
         param: { id: customerId },
-        json: {
-          name: customer.name,
-          phoneNumber: customer.phoneNumber,
-          variables: customer.variables
-        }
+        json: customer
       });
       
-      const data = await response.json();
+      await response.json();
       setEditMode(false);
       fetchCustomer();
     } catch (error) {
@@ -114,8 +110,7 @@ export default function CustomerDetail() {
       await client.customers[':id'].$put({
         param: { id: customerId },
         json: {
-          name: customer.name,
-          phoneNumber: customer.phoneNumber,
+          ...customer,
           variables: updatedVariables
         }
       });
@@ -128,6 +123,30 @@ export default function CustomerDetail() {
     
     setNewVariable({ key: '', value: '' });
     setVariableDialog(false);
+  };
+
+  // 変数を削除
+  const handleDeleteVariable = async (key: string) => {
+    if (!customer) return;
+    
+    const updatedVariables = customer.variables.filter(v => v.key !== key);
+
+    console.log(updatedVariables);
+    
+    try {
+      await client.customers[':id'].$put({
+        param: { id: customerId },
+        json: {
+          ...customer,
+          variables: updatedVariables
+        }
+      });
+      
+      // 更新成功時に再取得して最新状態を反映
+      fetchCustomer();
+    } catch (error) {
+      console.error('変数削除中にエラーが発生しました:', error);
+    }
   };
   
   // コール予約
@@ -336,7 +355,7 @@ export default function CustomerDetail() {
                           <Button
                             size="icon"
                             className="bg-transparent hover:bg-red-100"
-                            onClick={() => handleUpdateCustomer()}
+                            onClick={() => handleDeleteVariable(key)}
                             title="変数を削除"
                           >
                             <Trash className="h-4 w-4 text-red-500" />
