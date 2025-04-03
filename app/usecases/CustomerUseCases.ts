@@ -1,5 +1,5 @@
-import { Customer } from '../models/Customer';
-import { ICustomerRepository } from '../repositories/ICustomerRepository';
+import { Customer } from "../models/Customer";
+import { ICustomerRepository } from "../repositories/ICustomerRepository";
 
 /**
  * 顧客作成ユースケース
@@ -13,14 +13,14 @@ export class CreateCustomerUseCase {
     variables?: Record<string, string>;
   }): Promise<string> {
     const customer = Customer.create(input.name, input.phoneNumber);
-    
+
     // 変数を設定
     if (input.variables) {
       Object.entries(input.variables).forEach(([key, value]) => {
         customer.setVariable(key, value);
       });
     }
-    
+
     await this.customerRepo.save(customer);
     return customer.customerId;
   }
@@ -61,11 +61,11 @@ export class UpdateCustomerUseCase {
     variables?: Record<string, string>;
   }): Promise<boolean> {
     const customer = await this.customerRepo.findById(input.customerId);
-    
+
     if (!customer) {
       return false;
     }
-    
+
     // 新しい顧客を作成（イミュータブルなので更新ではなく新規作成）
     const updatedCustomer = new Customer(
       input.customerId,
@@ -73,14 +73,14 @@ export class UpdateCustomerUseCase {
       input.phoneNumber,
       customer.getAllVariables()
     );
-    
+
     // 変数を設定
     if (input.variables) {
       Object.entries(input.variables).forEach(([key, value]) => {
         updatedCustomer.setVariable(key, value);
       });
     }
-    
+
     await this.customerRepo.save(updatedCustomer);
     return true;
   }
@@ -94,11 +94,11 @@ export class DeleteCustomerUseCase {
 
   public async execute(customerId: string): Promise<boolean> {
     const customer = await this.customerRepo.findById(customerId);
-    
+
     if (!customer) {
       return false;
     }
-    
+
     await this.customerRepo.delete(customerId);
     return true;
   }

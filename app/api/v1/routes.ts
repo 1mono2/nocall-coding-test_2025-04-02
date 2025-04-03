@@ -23,10 +23,9 @@ import {
   GetAllCallsUseCase,
 } from "../../usecases/CallUseCases";
 import logger from "@/lib/logger";
-import { Call } from "@/app/models/Call";
 import { ContentfulStatusCode } from "hono/utils/http-status";
-import { CustomerInputSchema, CallInputSchema } from "../../dto/types";
-import { toCustomerDTO, toCustomerDTOList, toCallDTO, toCallDTOList } from "../../dto/mappers";
+import { CustomerInputSchema } from "../../dto/types";
+import { toCustomerDTO, toCustomerDTOList } from "../../dto/mappers";
 
 // リポジトリのインスタンスを作成
 const customerRepository = new CustomerRepository();
@@ -44,8 +43,19 @@ export const createCustomerHandler = factory.createHandlers(
   async (c) => {
     const input = c.req.valid("json");
 
+    // 変数配列をRecord<string, string>形式に変換
+    const variablesRecord: Record<string, string> = {};
+    if (input.variables && Array.isArray(input.variables)) {
+      input.variables.forEach(variable => {
+        variablesRecord[variable.key] = variable.value;
+      });
+    }
+
     const useCase = new CreateCustomerUseCase(customerRepository);
-    const customerId = await useCase.execute(input);
+    const customerId = await useCase.execute({
+      ...input,
+      variables: variablesRecord
+    });
     return c.json({
       message: "顧客の作成に成功しました",
       customerId,
@@ -96,10 +106,19 @@ export const updateCustomerHandler = factory.createHandlers(
     const { id } = c.req.valid("param");
     const input = c.req.valid("json");
 
+    // 変数配列をRecord<string, string>形式に変換
+    const variablesRecord: Record<string, string> = {};
+    if (input.variables && Array.isArray(input.variables)) {
+      input.variables.forEach(variable => {
+        variablesRecord[variable.key] = variable.value;
+      });
+    }
+
     const useCase = new UpdateCustomerUseCase(customerRepository);
     const success = await useCase.execute({
       customerId: id,
       ...input,
+      variables: variablesRecord
     });
 
     if (!success) {

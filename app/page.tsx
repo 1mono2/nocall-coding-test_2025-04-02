@@ -68,7 +68,7 @@ export default function Home() {
       const response = await client.customers.$post({
         json: {
           name: newCustomer.name,
-          phoneNumber: newCustomer.phoneNumber || undefined
+          phoneNumber: newCustomer.phoneNumber
         }
       });
 
@@ -127,13 +127,14 @@ export default function Home() {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="phone" className="text-sm font-medium">
-                    電話番号
+                    電話番号 *
                   </label>
                   <Input
                     id="phone"
                     value={newCustomer.phoneNumber}
                     onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
-                    placeholder="電話番号（任意）"
+                    placeholder="電話番号を入力"
+                    required
                   />
                 </div>
                 <div className="flex justify-end gap-3 pt-2">

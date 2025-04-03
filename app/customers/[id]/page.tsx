@@ -32,40 +32,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { AppType } from '@/app/api/v1/routes';
 import { hc } from "hono/client";
-import { CustomerDTO } from '@/app/dto/types';
-
-// フロントエンド用のカスタム型
-type CustomerDetailData = {
-  customerId: string;
-  name: string;
-  phoneNumber?: string;
-  // Record型として変数を管理（使いやすいように変換）
-  variables: Record<string, string>;
-};
-
-type Call = {
-  callId: string;
-  customerId: string;
-  status: 'queued' | 'in-progress' | 'completed' | 'canceled' | 'failed';
-  requestedAt: string;
-  startedAt?: string;
-  endedAt?: string;
-  durationSec?: number;
-};
+import { CustomerDTO, CallDTO } from '@/app/dto/types';
 
 export default function CustomerDetail() {
   const params = useParams();
   const router = useRouter();
   const customerId = params.id as string;
   
-  const [customer, setCustomer] = useState<CustomerDetailData>();
-  const [calls, setCalls] = useState<Call[]>([]);
+  const [customer, setCustomer] = useState<CustomerDTO>();
+  const [calls, setCalls] = useState<CallDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [customerForm, setCustomerForm] = useState<{
-    name: string;
-    phoneNumber?: string;
-  }>({ name: '', phoneNumber: '' });
+
   const [variableDialog, setVariableDialog] = useState(false);
   const [newVariable, setNewVariable] = useState({ key: '', value: '' });
   const client = hc<AppType>('/').api.v1;
@@ -77,22 +55,7 @@ export default function CustomerDetail() {
       const response = await client.customers[':id'].$get({ param: { id: customerId } });
       const data = await response.json();
       
-      // APIから返されるDTOを変換
-      // variables配列を使いやすいRecordに変換
-      const variablesRecord = data.customer.variables.reduce((acc: Record<string, string>, v: {key: string, value: string}) => {
-        acc[v.key] = v.value;
-        return acc;
-      }, {});
-      
-      setCustomer({
-        ...data.customer,
-        variables: variablesRecord
-      });
-      
-      setCustomerForm({
-        name: data.customer.name,
-        phoneNumber: data.customer.phoneNumber || ''
-      });
+      setCustomer(data.customer);
     } catch (error) {
       console.error('顧客データの取得中にエラーが発生しました:', error);
     } finally {
@@ -118,15 +81,15 @@ export default function CustomerDetail() {
   
   // 顧客情報を更新
   const handleUpdateCustomer = async () => {
-    if (!customerForm.name) return;
+    if (!customer) return;
     
-    try {
+    try {      
       const response = await client.customers[':id'].$put({
         param: { id: customerId },
         json: {
-          name: customerForm.name,
-          phoneNumber: customerForm.phoneNumber || undefined,
-          variables: customer?.variables,
+          name: customer.name,
+          phoneNumber: customer.phoneNumber,
+          variables: customer.variables
         }
       });
       
@@ -139,34 +102,32 @@ export default function CustomerDetail() {
   };
   
   // 変数を追加
-  const handleAddVariable = () => {
+  const handleAddVariable = async () => {
     if (!newVariable.key || !customer) return;
     
-    const updatedVariables = {
-      ...(customer.variables || {}),
-      [newVariable.key]: newVariable.value,
-    };
+    const updatedVariables = [
+      ...customer.variables,
+      { key: newVariable.key, value: newVariable.value }
+    ];
     
-    setCustomer({
-      ...customer,
-      variables: updatedVariables,
-    });
+    try {
+      await client.customers[':id'].$put({
+        param: { id: customerId },
+        json: {
+          name: customer.name,
+          phoneNumber: customer.phoneNumber,
+          variables: updatedVariables
+        }
+      });
+      
+      // 更新成功時に再取得して最新状態を反映
+      fetchCustomer();
+    } catch (error) {
+      console.error('変数追加中にエラーが発生しました:', error);
+    }
     
     setNewVariable({ key: '', value: '' });
     setVariableDialog(false);
-  };
-  
-  // 変数を削除
-  const handleDeleteVariable = (key: string) => {
-    if (!customer || !customer.variables) return;
-    
-    const updatedVariables = { ...customer.variables };
-    delete updatedVariables[key];
-    
-    setCustomer({
-      ...customer,
-      variables: updatedVariables,
-    });
   };
   
   // コール予約
@@ -277,8 +238,8 @@ export default function CustomerDetail() {
                     </label>
                     <Input
                       id="name"
-                      value={customerForm.name}
-                      onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
+                      value={customer.name}
+                      onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
                       placeholder="顧客名を入力"
                       required
                     />
@@ -289,8 +250,8 @@ export default function CustomerDetail() {
                     </label>
                     <Input
                       id="phoneNumber"
-                      value={customerForm.phoneNumber}
-                      onChange={(e) => setCustomerForm({ ...customerForm, phoneNumber: e.target.value })}
+                      value={customer.phoneNumber}
+                      onChange={(e) => setCustomer({ ...customer, phoneNumber: e.target.value })}
                       placeholder="電話番号（任意）"
                     />
                   </div>
@@ -367,7 +328,7 @@ export default function CustomerDetail() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {Object.entries(customer.variables).map(([key, value]) => (
+                    {customer.variables.map(({key, value}) => (
                       <TableRow key={key}>
                         <TableCell className="font-medium">{key}</TableCell>
                         <TableCell>{value}</TableCell>
@@ -375,7 +336,7 @@ export default function CustomerDetail() {
                           <Button
                             size="icon"
                             className="bg-transparent hover:bg-red-100"
-                            onClick={() => handleDeleteVariable(key)}
+                            onClick={() => handleUpdateCustomer()}
                             title="変数を削除"
                           >
                             <Trash className="h-4 w-4 text-red-500" />
