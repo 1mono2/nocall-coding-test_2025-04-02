@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { hc } from 'hono/client';
+import { AppType } from '@/app/api/v1/routes';
 import {
   Card,
   CardContent,
@@ -27,34 +29,25 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-
-type Customer = {
-  customerId: string;
-  name: string;
-  phoneNumber?: string;
-  variables?: Record<string, string>;
-};
+import { CustomerDTO } from './dto/types';
 
 export default function Home() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     phoneNumber: '',
   });
+  const client = hc<AppType>('/').api.v1;
   const router = useRouter();
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/v1/customers');
+      const response = await client.customers.$get();
       const data = await response.json();
-      if (data.success) {
-        setCustomers(data.data.customers);
-      } else {
-        console.error('顧客データの取得に失敗しました:', data.error);
-      }
+      setCustomers(data.customers);
     } catch (error) {
       console.error('顧客データの取得中にエラーが発生しました:', error);
     } finally {
@@ -71,23 +64,17 @@ export default function Home() {
     if (!newCustomer.name) return;
 
     try {
-      const response = await fetch('/api/v1/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const response = await client.customers.$post({
+        json: {
           name: newCustomer.name,
-          phoneNumber: newCustomer.phoneNumber || undefined,
-        }),
+          phoneNumber: newCustomer.phoneNumber || undefined
+        }
       });
 
-      const data = await response.json();
-      if (data.success) {
-        setDialogOpen(false);
-        setNewCustomer({ name: '', phoneNumber: '' });
-        fetchCustomers();
-      } else {
-        console.error('顧客作成に失敗しました:', data.error);
-      }
+      await response.json();
+      setDialogOpen(false);
+      setNewCustomer({ name: '', phoneNumber: '' });
+      fetchCustomers();
     } catch (error) {
       console.error('顧客作成中にエラーが発生しました:', error);
     }
@@ -97,16 +84,9 @@ export default function Home() {
     if (!window.confirm('この顧客を削除してもよろしいですか？')) return;
 
     try {
-      const response = await fetch(`/api/v1/customers/${customerId}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        fetchCustomers();
-      } else {
-        console.error('顧客削除に失敗しました:', data.error);
-      }
+      const response = await client.customers[':id'].$delete({ param: { id: customerId } });
+      await response.json();
+      fetchCustomers();
     } catch (error) {
       console.error('顧客削除中にエラーが発生しました:', error);
     }
@@ -120,50 +100,6 @@ export default function Home() {
             <CardTitle>顧客一覧</CardTitle>
             <CardDescription>登録されているすべての顧客を表示します</CardDescription>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>顧客を追加</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>新規顧客を追加</DialogTitle>
-                <DialogDescription>
-                  新しい顧客の情報を入力してください
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCreateCustomer} className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">
-                    顧客名 *
-                  </label>
-                  <Input
-                    id="name"
-                    value={newCustomer.name}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                    placeholder="顧客名を入力"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="phone" className="text-sm font-medium">
-                    電話番号
-                  </label>
-                  <Input
-                    id="phone"
-                    value={newCustomer.phoneNumber}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
-                    placeholder="電話番号（任意）"
-                  />
-                </div>
-                <div className="flex justify-end gap-3 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                    キャンセル
-                  </Button>
-                  <Button type="submit">登録する</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -215,6 +151,50 @@ export default function Home() {
           )}
         </CardContent>
       </Card>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>顧客を追加</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>新規顧客を追加</DialogTitle>
+                <DialogDescription>
+                  新しい顧客の情報を入力してください
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateCustomer} className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-medium">
+                    顧客名 *
+                  </label>
+                  <Input
+                    id="name"
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                    placeholder="顧客名を入力"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="phone" className="text-sm font-medium">
+                    電話番号
+                  </label>
+                  <Input
+                    id="phone"
+                    value={newCustomer.phoneNumber}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
+                    placeholder="電話番号（任意）"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                    キャンセル
+                  </Button>
+                  <Button type="submit">登録する</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
     </div>
   );
 }
