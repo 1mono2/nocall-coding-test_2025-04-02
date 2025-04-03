@@ -1,9 +1,11 @@
-import { Hono } from "hono";
+import { Context, Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { createFactory } from "hono/factory";
 import { z } from "zod";
 import { CustomerRepository } from "../../repositories/CustomerRepository";
 import { CallRepository } from "../../repositories/CallRepository";
+import { Customer } from "../../models/Customer";
 import {
   CreateCustomerUseCase,
   GetCustomerUseCase,
@@ -21,6 +23,8 @@ import {
   GetAllCallsUseCase,
 } from "../../usecases/CallUseCases";
 import logger from "@/lib/logger";
+import { Call } from "@/app/models/Call";
+import { ContentfulStatusCode } from "hono/utils/http-status";
 
 // リポジトリのインスタンスを作成
 const customerRepository = new CustomerRepository();
@@ -28,15 +32,6 @@ const callRepository = new CallRepository();
 
 // ファクトリーを作成
 const factory = createFactory();
-
-// レスポンス型の定義
-type ApiResponse<T = unknown> = {
-  success: boolean;
-  data?: T;
-  error?: string;
-};
-
-// ===== 顧客API ハンドラー =====
 
 // 顧客作成のスキーマ
 const CreateCustomerSchema = z.object({
@@ -52,43 +47,22 @@ export const createCustomerHandler = factory.createHandlers(
     const input = c.req.valid("json");
 
     const useCase = new CreateCustomerUseCase(customerRepository);
-    try {
-      const customerId = await useCase.execute(input);
-      return c.json<ApiResponse<{ customerId: string }>>({
-        success: true,
-        data: { customerId },
-      });
-    } catch (error) {
-      return c.json<ApiResponse>(
-        {
-          success: false,
-          error: "顧客の作成に失敗しました",
-        },
-        500
-      );
-    }
+    const customerId = await useCase.execute(input);
+    return c.json({
+      message: "顧客の作成に成功しました",
+      customerId,
+    });
   }
 );
 
 // 顧客一覧取得ハンドラー
 export const getAllCustomersHandler = factory.createHandlers(async (c) => {
   const useCase = new GetAllCustomersUseCase(customerRepository);
-  try {
-    const customers = await useCase.execute();
-    return c.json<ApiResponse<{ customers: any[] }>>({
-      success: true,
-      data: { customers },
-    });
-  } catch (error) {
-    logger.error(error);
-    return c.json<ApiResponse>(
-      {
-        success: false,
-        error: "顧客一覧の取得に失敗しました",
-      },
-      500
-    );
-  }
+  const customers = await useCase.execute();
+  return c.json({
+    message: "顧客一覧の取得に成功しました",
+    customers,
+  });
 });
 
 // 顧客取得ハンドラー
@@ -98,32 +72,18 @@ export const getCustomerHandler = factory.createHandlers(
     const { id } = c.req.valid("param");
 
     const useCase = new GetCustomerUseCase(customerRepository);
-    try {
-      const customer = await useCase.execute(id);
+    const customer = await useCase.execute(id);
 
-      if (!customer) {
-        return c.json<ApiResponse>(
-          {
-            success: false,
-            error: "顧客が見つかりません",
-          },
-          404
-        );
-      }
-
-      return c.json<ApiResponse<{ customer: any }>>({
-        success: true,
-        data: { customer },
+    if (!customer) {
+      throw new HTTPException(404, {
+        message: "顧客が見つかりません",
       });
-    } catch (error) {
-      return c.json<ApiResponse>(
-        {
-          success: false,
-          error: "顧客の取得に失敗しました",
-        },
-        500
-      );
     }
+
+    return c.json({
+      message: "顧客の取得に成功しました",
+      customer,
+    });
   }
 );
 
@@ -143,32 +103,18 @@ export const updateCustomerHandler = factory.createHandlers(
     const input = c.req.valid("json");
 
     const useCase = new UpdateCustomerUseCase(customerRepository);
-    try {
-      const success = await useCase.execute({
-        customerId: id,
-        ...input,
+    const success = await useCase.execute({
+      customerId: id,
+      ...input,
+    });
+
+    if (!success) {
+      throw new HTTPException(404, {
+        message: "顧客が見つかりません",
       });
-
-      if (!success) {
-        return c.json<ApiResponse>(
-          {
-            success: false,
-            error: "顧客が見つかりません",
-          },
-          404
-        );
-      }
-
-      return c.json<ApiResponse>({ success: true });
-    } catch (error) {
-      return c.json<ApiResponse>(
-        {
-          success: false,
-          error: "顧客の更新に失敗しました",
-        },
-        500
-      );
     }
+
+    return c.json({ message: "顧客の更新に成功しました" });
   }
 );
 
@@ -179,29 +125,15 @@ export const deleteCustomerHandler = factory.createHandlers(
     const { id } = c.req.valid("param");
 
     const useCase = new DeleteCustomerUseCase(customerRepository);
-    try {
-      const success = await useCase.execute(id);
+    const success = await useCase.execute(id);
 
-      if (!success) {
-        return c.json<ApiResponse>(
-          {
-            success: false,
-            error: "顧客が見つかりません",
-          },
-          404
-        );
-      }
-
-      return c.json<ApiResponse>({ success: true });
-    } catch (error) {
-      return c.json<ApiResponse>(
-        {
-          success: false,
-          error: "顧客の削除に失敗しました",
-        },
-        500
-      );
+    if (!success) {
+      throw new HTTPException(404, {
+        message: "顧客が見つかりません",
+      });
     }
+
+    return c.json({ message: "顧客の削除に成功しました" });
   }
 );
 
@@ -220,60 +152,36 @@ export const requestCallHandler = factory.createHandlers(
     const input = c.req.valid("json");
 
     const useCase = new RequestCallUseCase(callRepository, customerRepository);
-    try {
-      const requestedAt = input.requestedAt
-        ? new Date(input.requestedAt)
-        : undefined;
+    const requestedAt = input.requestedAt
+      ? new Date(input.requestedAt)
+      : undefined;
 
-      const callId = await useCase.execute({
-        customerId: input.customerId,
-        requestedAt,
+    const callId = await useCase.execute({
+      customerId: input.customerId,
+      requestedAt,
+    });
+
+    if (!callId) {
+      throw new HTTPException(404, {
+        message: "顧客が見つかりません",
       });
-
-      if (!callId) {
-        return c.json<ApiResponse>(
-          {
-            success: false,
-            error: "顧客が見つかりません",
-          },
-          404
-        );
-      }
-
-      return c.json<ApiResponse<{ callId: string }>>({
-        success: true,
-        data: { callId },
-      });
-    } catch (error) {
-      return c.json<ApiResponse>(
-        {
-          success: false,
-          error: "コールの予約に失敗しました",
-        },
-        500
-      );
     }
+
+    return c.json({
+      message: "コール予約に成功しました",
+      data: { callId },
+    });
   }
 );
 
 // コール一覧取得ハンドラー
 export const getAllCallsHandler = factory.createHandlers(async (c) => {
   const useCase = new GetAllCallsUseCase(callRepository);
-  try {
-    const calls = await useCase.execute();
-    return c.json<ApiResponse<{ calls: any[] }>>({
-      success: true,
-      data: { calls },
-    });
-  } catch (error) {
-    return c.json<ApiResponse>(
-      {
-        success: false,
-        error: "コール一覧の取得に失敗しました",
-      },
-      500
-    );
-  }
+  const calls = await useCase.execute();
+  return c.json({
+    message: "コール一覧の取得に成功しました",
+    calls,
+  });
 });
 
 // 顧客のコール一覧取得ハンドラー
@@ -283,21 +191,12 @@ export const getCustomerCallsHandler = factory.createHandlers(
     const { id } = c.req.valid("param");
 
     const useCase = new GetCallsByCustomerUseCase(callRepository);
-    try {
-      const calls = await useCase.execute(id);
-      return c.json<ApiResponse<{ calls: any[] }>>({
-        success: true,
-        data: { calls },
-      });
-    } catch (error) {
-      return c.json<ApiResponse>(
-        {
-          success: false,
-          error: "コール一覧の取得に失敗しました",
-        },
-        500
-      );
-    }
+
+    const calls = await useCase.execute(id);
+    return c.json({
+      message: "コール一覧の取得に成功しました",
+      calls,
+    });
   }
 );
 
@@ -308,32 +207,18 @@ export const getCallHandler = factory.createHandlers(
     const { id } = c.req.valid("param");
 
     const useCase = new GetCallUseCase(callRepository);
-    try {
-      const call = await useCase.execute(id);
+    const call = await useCase.execute(id);
 
-      if (!call) {
-        return c.json<ApiResponse>(
-          {
-            success: false,
-            error: "コールが見つかりません",
-          },
-          404
-        );
-      }
-
-      return c.json<ApiResponse<{ call: any }>>({
-        success: true,
-        data: { call },
+    if (!call) {
+      throw new HTTPException(404, {
+        message: "コールが見つかりません",
       });
-    } catch (error) {
-      return c.json<ApiResponse>(
-        {
-          success: false,
-          error: "コールの取得に失敗しました",
-        },
-        500
-      );
     }
+
+    return c.json({
+      message: "コールの取得に成功しました",
+      call,
+    });
   }
 );
 
@@ -344,29 +229,15 @@ export const startCallHandler = factory.createHandlers(
     const { id } = c.req.valid("param");
 
     const useCase = new StartCallUseCase(callRepository);
-    try {
-      const success = await useCase.execute(id);
+    const success = await useCase.execute(id);
 
-      if (!success) {
-        return c.json<ApiResponse>(
-          {
-            success: false,
-            error: "コールの開始に失敗しました",
-          },
-          400
-        );
-      }
-
-      return c.json<ApiResponse>({ success: true });
-    } catch (error) {
-      return c.json<ApiResponse>(
-        {
-          success: false,
-          error: "コールの開始処理に失敗しました",
-        },
-        500
-      );
+    if (!success) {
+      throw new HTTPException(400, {
+        message: "コールの開始に失敗しました",
+      });
     }
+
+    return c.json({ message: "コールを開始しました" });
   }
 );
 
@@ -377,29 +248,15 @@ export const completeCallHandler = factory.createHandlers(
     const { id } = c.req.valid("param");
 
     const useCase = new CompleteCallUseCase(callRepository);
-    try {
-      const success = await useCase.execute(id);
+    const success = await useCase.execute(id);
 
-      if (!success) {
-        return c.json<ApiResponse>(
-          {
-            success: false,
-            error: "コールの完了に失敗しました",
-          },
-          400
-        );
-      }
-
-      return c.json<ApiResponse>({ success: true });
-    } catch (error) {
-      return c.json<ApiResponse>(
-        {
-          success: false,
-          error: "コールの完了処理に失敗しました",
-        },
-        500
-      );
+    if (!success) {
+      throw new HTTPException(400, {
+        message: "コールの完了に失敗しました",
+      });
     }
+
+    return c.json({ message: "コールを完了しました" });
   }
 );
 
@@ -410,36 +267,58 @@ export const cancelCallHandler = factory.createHandlers(
     const { id } = c.req.valid("param");
 
     const useCase = new CancelCallUseCase(callRepository);
-    try {
-      const success = await useCase.execute(id);
+    const success = await useCase.execute(id);
 
-      if (!success) {
-        return c.json<ApiResponse>(
-          {
-            success: false,
-            error: "コールのキャンセルに失敗しました",
-          },
-          400
-        );
-      }
-
-      return c.json<ApiResponse>({ success: true });
-    } catch (error) {
-      return c.json<ApiResponse>(
-        {
-          success: false,
-          error: "コールのキャンセル処理に失敗しました",
-        },
-        500
-      );
+    if (!success) {
+      throw new HTTPException(400, {
+        message: "コールのキャンセルに失敗しました",
+      });
     }
+
+    return c.json({ message: "コールをキャンセルしました" });
   }
 );
+
+// グローバルエラーハンドリング
+const errorHandler = (err: any, c: Context) => {
+  // ステータスコードとメッセージ初期値
+  let status: ContentfulStatusCode = 500;
+  let message = "Internal Server Error";
+
+  // HTTPExceptionならステータスを取得、メッセージを上書き
+  if (err instanceof HTTPException && err.status < 500) {
+    status = err.status;
+    message = err.message;
+
+    return c.json(
+      {
+        status,
+        message,
+        instance: c.req.path,
+      },
+      status
+    );
+  }
+
+  // 意図しないエラー
+  logger.error(err);
+  return c.json(
+    {
+      status,
+      message,
+      instance: c.req.path,
+    },
+    status
+  );
+};
 
 // アプリケーション作成とルート定義
 const app = new Hono()
   .basePath("/api/v1")
-  .get("/health", (c) => c.json<ApiResponse>({ success: true }))
+  .get("/health", (c) => c.json({ message: "API is running" }, 200))
+  .get("/error", (c) => {
+    throw new HTTPException(400, { message: "Internal Server Error" });
+  })
   // 顧客関連ルート
   .post("/customers", ...createCustomerHandler)
   .get("/customers", ...getAllCustomersHandler)
@@ -454,7 +333,8 @@ const app = new Hono()
   .get("/calls/:id", ...getCallHandler)
   .post("/calls/:id/start", ...startCallHandler)
   .post("/calls/:id/complete", ...completeCallHandler)
-  .post("/calls/:id/cancel", ...cancelCallHandler);
+  .post("/calls/:id/cancel", ...cancelCallHandler)
+  .onError(errorHandler);
 
 export const api = app;
 export type AppType = typeof app;
