@@ -1,8 +1,8 @@
-import { eq } from 'drizzle-orm';
-import { db } from '../db';
-import { calls } from '../db/schema';
-import { Call, CallStatus } from '../models/Call';
-import { ICallRepository } from './ICallRepository';
+import { eq } from "drizzle-orm";
+import { db } from "../db";
+import { calls } from "../db/schema";
+import { Call, CallStatus } from "../models/Call";
+import { ICallRepository } from "./ICallRepository";
 
 /**
  * コールリポジトリの実装
@@ -12,7 +12,8 @@ export class CallRepository implements ICallRepository {
    * コールを保存（新規作成または更新）
    */
   async save(call: Call): Promise<void> {
-    await db.insert(calls)
+    await db
+      .insert(calls)
       .values({
         callId: call.callId,
         customerId: call.customerId,
@@ -20,7 +21,7 @@ export class CallRepository implements ICallRepository {
         requestedAt: call.requestedAt,
         startedAt: call.startedAt || null,
         endedAt: call.endedAt || null,
-        durationSec: call.durationSec || null
+        durationSec: call.durationSec || null,
       })
       .onConflictDoUpdate({
         target: calls.callId,
@@ -29,8 +30,8 @@ export class CallRepository implements ICallRepository {
           startedAt: call.startedAt || null,
           endedAt: call.endedAt || null,
           durationSec: call.durationSec || null,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
   }
 
@@ -38,7 +39,8 @@ export class CallRepository implements ICallRepository {
    * コールをIDで検索
    */
   async findById(callId: string): Promise<Call | null> {
-    const callData = await db.select()
+    const callData = await db
+      .select()
       .from(calls)
       .where(eq(calls.callId, callId))
       .limit(1);
@@ -54,7 +56,8 @@ export class CallRepository implements ICallRepository {
    * 顧客IDに関連する全てのコールを取得
    */
   async findAllByCustomerId(customerId: string): Promise<Call[]> {
-    const callsData = await db.select()
+    const callsData = await db
+      .select()
       .from(calls)
       .where(eq(calls.customerId, customerId));
 
@@ -73,8 +76,7 @@ export class CallRepository implements ICallRepository {
    * コールを削除
    */
   async delete(callId: string): Promise<void> {
-    await db.delete(calls)
-      .where(eq(calls.callId, callId));
+    await db.delete(calls).where(eq(calls.callId, callId));
   }
 
   /**

@@ -1,5 +1,5 @@
-import { handle } from 'hono/vercel';
-import { api } from '../routes';
+import { handle } from "hono/vercel";
+import { api } from "../routes";
 
 // APIのルートハンドラー
 export const GET = handle(api);

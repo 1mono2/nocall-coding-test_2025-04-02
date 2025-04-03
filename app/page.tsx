@@ -1,103 +1,221 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+
+type Customer = {
+  customerId: string;
+  name: string;
+  phoneNumber?: string;
+  variables?: Record<string, string>;
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
+    phoneNumber: '',
+  });
+  const router = useRouter();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/v1/customers');
+      const data = await response.json();
+      if (data.success) {
+        setCustomers(data.data.customers);
+      } else {
+        console.error('顧客データの取得に失敗しました:', data.error);
+      }
+    } catch (error) {
+      console.error('顧客データの取得中にエラーが発生しました:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustomer.name) return;
+
+    try {
+      const response = await fetch('/api/v1/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newCustomer.name,
+          phoneNumber: newCustomer.phoneNumber || undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setDialogOpen(false);
+        setNewCustomer({ name: '', phoneNumber: '' });
+        fetchCustomers();
+      } else {
+        console.error('顧客作成に失敗しました:', data.error);
+      }
+    } catch (error) {
+      console.error('顧客作成中にエラーが発生しました:', error);
+    }
+  };
+
+  const handleDeleteCustomer = async (customerId: string) => {
+    if (!window.confirm('この顧客を削除してもよろしいですか？')) return;
+
+    try {
+      const response = await fetch(`/api/v1/customers/${customerId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        fetchCustomers();
+      } else {
+        console.error('顧客削除に失敗しました:', data.error);
+      }
+    } catch (error) {
+      console.error('顧客削除中にエラーが発生しました:', error);
+    }
+  };
+
+  return (
+    <div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>顧客一覧</CardTitle>
+            <CardDescription>登録されているすべての顧客を表示します</CardDescription>
+          </div>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>顧客を追加</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>新規顧客を追加</DialogTitle>
+                <DialogDescription>
+                  新しい顧客の情報を入力してください
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateCustomer} className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-medium">
+                    顧客名 *
+                  </label>
+                  <Input
+                    id="name"
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                    placeholder="顧客名を入力"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="phone" className="text-sm font-medium">
+                    電話番号
+                  </label>
+                  <Input
+                    id="phone"
+                    value={newCustomer.phoneNumber}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
+                    placeholder="電話番号（任意）"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                    キャンセル
+                  </Button>
+                  <Button type="submit">登録する</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-8">読み込み中...</div>
+          ) : customers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              顧客データがありません。「顧客を追加」ボタンから新しい顧客を登録してください。
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>顧客名</TableHead>
+                  <TableHead>電話番号</TableHead>
+                  <TableHead>カスタム変数</TableHead>
+                  <TableHead className="text-right">アクション</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {customers.map((customer) => (
+                  <TableRow key={customer.customerId}>
+                    <TableCell className="font-medium">{customer.name}</TableCell>
+                    <TableCell>{customer.phoneNumber || '-'}</TableCell>
+                    <TableCell>
+                      {customer.variables && Object.keys(customer.variables).length > 0
+                        ? Object.keys(customer.variables).length + '個の変数'
+                        : '変数なし'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push(`/customers/${customer.customerId}`)}
+                        >
+                          詳細
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleDeleteCustomer(customer.customerId)}
+                        >
+                          削除
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

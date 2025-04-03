@@ -20,6 +20,7 @@ import {
   GetCallsByCustomerUseCase,
   GetAllCallsUseCase,
 } from "../../usecases/CallUseCases";
+import logger from "@/lib/logger";
 
 // リポジトリのインスタンスを作成
 const customerRepository = new CustomerRepository();
@@ -79,6 +80,7 @@ export const getAllCustomersHandler = factory.createHandlers(async (c) => {
       data: { customers },
     });
   } catch (error) {
+    logger.error(error);
     return c.json<ApiResponse>(
       {
         success: false,
@@ -436,6 +438,8 @@ export const cancelCallHandler = factory.createHandlers(
 
 // アプリケーション作成とルート定義
 const app = new Hono()
+  .basePath("/api/v1")
+  .get("/health", (c) => c.json<ApiResponse>({ success: true }))
   // 顧客関連ルート
   .post("/customers", ...createCustomerHandler)
   .get("/customers", ...getAllCustomersHandler)
