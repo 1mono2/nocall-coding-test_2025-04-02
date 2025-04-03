@@ -119,7 +119,7 @@ export const deleteCustomerHandler = factory.createHandlers(
   async (c) => {
     const { id } = c.req.valid("param");
 
-    const useCase = new DeleteCustomerUseCase(customerRepository);
+    const useCase = new DeleteCustomerUseCase(customerRepository, callRepository);
     const success = await useCase.execute(id);
 
     if (!success) {

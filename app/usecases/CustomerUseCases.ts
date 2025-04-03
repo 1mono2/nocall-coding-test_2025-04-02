@@ -1,4 +1,5 @@
 import { Customer, CustomerVariable } from "../models/Customer";
+import { ICallRepository } from "../repositories/ICallRepository";
 import { ICustomerRepository } from "../repositories/ICustomerRepository";
 
 /**
@@ -83,15 +84,28 @@ export class UpdateCustomerUseCase {
  * 顧客削除ユースケース
  */
 export class DeleteCustomerUseCase {
-  constructor(private customerRepo: ICustomerRepository) {}
+  constructor(
+    private customerRepo: ICustomerRepository,
+    private callRepo: ICallRepository
+  ) {}
 
   public async execute(customerId: string): Promise<boolean> {
+    // 顧客の存在確認
     const customer = await this.customerRepo.findById(customerId);
 
     if (!customer) {
       return false;
     }
 
+    // 顧客に関連する通話を全て取得
+    const customerCalls = await this.callRepo.findAllByCustomerId(customerId);
+
+    // 関連する通話を全て削除
+    for (const call of customerCalls) {
+      await this.callRepo.delete(call.callId);
+    }
+
+    // 顧客を削除
     await this.customerRepo.delete(customerId);
     return true;
   }
