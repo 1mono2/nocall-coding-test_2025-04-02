@@ -65,7 +65,7 @@ export class UpdateCustomerUseCase {
       return false;
     }
 
-    // 新しい顧客を作成（イミュータブルなので更新ではなく新規作成）
+    // 新しい顧客オブジェクトを作成（イミュータブルなデザインパターン）
     const updatedCustomer = new Customer(
       input.customerId,
       input.name,
