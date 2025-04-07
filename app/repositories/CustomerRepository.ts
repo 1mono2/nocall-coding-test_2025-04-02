@@ -1,5 +1,5 @@
-import { and, eq } from "drizzle-orm";
-import { db } from "../db";
+import { eq } from "drizzle-orm";
+import { DatabaseClient, db as globalDb } from "../db";
 import { customers, customerVariables } from "../db/schema";
 import { Customer, CustomerVariable } from "../models/Customer";
 import { ICustomerRepository } from "./ICustomerRepository";
@@ -9,11 +9,16 @@ import { ICustomerRepository } from "./ICustomerRepository";
  */
 export class CustomerRepository implements ICustomerRepository {
   /**
+   * コンストラクタ
+   * @param db DBインスタンスまたはトランザクション、デフォルトではグローバルのDBを使用
+   */
+  constructor(private db: DatabaseClient = globalDb) {}
+  /**
    * 顧客を保存（新規作成または更新）
    */
   async save(customer: Customer): Promise<void> {
     // トランザクション開始
-    await db.transaction(async (tx) => {
+    await this.db.transaction(async (tx) => {
       // 顧客情報を保存
       await tx
         .insert(customers)
@@ -56,7 +61,7 @@ export class CustomerRepository implements ICustomerRepository {
    */
   async findById(id: string): Promise<Customer | null> {
     // 顧客を検索
-    const customerData = await db
+    const customerData = await this.db
       .select()
       .from(customers)
       .where(eq(customers.customerId, id))
@@ -67,7 +72,7 @@ export class CustomerRepository implements ICustomerRepository {
     }
 
     // 顧客の変数を検索
-    const variablesData = await db
+    const variablesData = await this.db
       .select()
       .from(customerVariables)
       .where(eq(customerVariables.customerId, id));
@@ -91,10 +96,10 @@ export class CustomerRepository implements ICustomerRepository {
    */
   async findAll(): Promise<Customer[]> {
     // 全ての顧客を取得
-    const customersData = await db.select().from(customers);
+    const customersData = await this.db.select().from(customers);
 
     // 全ての変数を取得
-    const variablesData = await db.select().from(customerVariables);
+    const variablesData = await this.db.select().from(customerVariables);
 
     // 顧客IDごとに変数をグループ化
     const variablesByCustomerId = new Map<string, CustomerVariable[]>();
@@ -126,7 +131,7 @@ export class CustomerRepository implements ICustomerRepository {
    * 顧客を削除
    */
   async delete(id: string): Promise<void> {
-    await db.delete(customers).where(eq(customers.customerId, id));
+    await this.db.delete(customers).where(eq(customers.customerId, id));
     // カスケード削除により、関連する変数も削除される
   }
 }

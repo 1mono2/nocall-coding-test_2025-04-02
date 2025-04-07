@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from "crypto";
 
 /**
  * コールステータスの列挙型
@@ -29,12 +29,7 @@ export class Call {
    * 新しいコールインスタンスを作成（予約状態）
    */
   static create(customerId: string, requestedAt: Date = new Date()): Call {
-    return new Call(
-      randomUUID(),
-      customerId,
-      CallStatus.QUEUED,
-      requestedAt
-    );
+    return new Call(randomUUID(), customerId, CallStatus.QUEUED, requestedAt);
   }
 
   /**
@@ -49,9 +44,11 @@ export class Call {
    */
   startCall(): void {
     if (this._status !== CallStatus.QUEUED) {
-      throw new Error(`コールを開始できません。現在のステータス: ${this._status}`);
+      throw new Error(
+        `コールを開始できません。現在のステータス: ${this._status}`
+      );
     }
-    
+
     this._status = CallStatus.IN_PROGRESS;
     this.startedAt = new Date();
   }
@@ -61,14 +58,18 @@ export class Call {
    */
   completeCall(): void {
     if (this._status !== CallStatus.IN_PROGRESS) {
-      throw new Error(`コールを完了できません。現在のステータス: ${this._status}`);
+      throw new Error(
+        `コールを完了できません。現在のステータス: ${this._status}`
+      );
     }
-    
+
     this._status = CallStatus.COMPLETED;
     this.endedAt = new Date();
-    
+
     if (this.startedAt) {
-      this.durationSec = Math.floor((this.endedAt.getTime() - this.startedAt.getTime()) / 1000);
+      this.durationSec = Math.floor(
+        (this.endedAt.getTime() - this.startedAt.getTime()) / 1000
+      );
     }
   }
 
@@ -76,10 +77,15 @@ export class Call {
    * コールをキャンセル
    */
   cancelCall(): void {
-    if (this._status === CallStatus.COMPLETED || this._status === CallStatus.FAILED) {
-      throw new Error(`コールをキャンセルできません。現在のステータス: ${this._status}`);
+    if (
+      this._status === CallStatus.COMPLETED ||
+      this._status === CallStatus.FAILED
+    ) {
+      throw new Error(
+        `コールをキャンセルできません。現在のステータス: ${this._status}`
+      );
     }
-    
+
     this._status = CallStatus.CANCELED;
     this.endedAt = new Date();
   }
@@ -88,10 +94,15 @@ export class Call {
    * コールを失敗状態に設定
    */
   failCall(): void {
-    if (this._status === CallStatus.COMPLETED || this._status === CallStatus.CANCELED) {
-      throw new Error(`コールを失敗状態にできません。現在のステータス: ${this._status}`);
+    if (
+      this._status === CallStatus.COMPLETED ||
+      this._status === CallStatus.CANCELED
+    ) {
+      throw new Error(
+        `コールを失敗状態にできません。現在のステータス: ${this._status}`
+      );
     }
-    
+
     this._status = CallStatus.FAILED;
     this.endedAt = new Date();
   }
