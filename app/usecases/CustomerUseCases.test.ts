@@ -8,7 +8,7 @@ import {
 } from "./CustomerUseCases";
 import { ICustomerRepository } from "../repositories/ICustomerRepository";
 import { ICallRepository } from "../repositories/ICallRepository";
-import { Customer, CustomerVariable } from "../models/Customer";
+import { Customer } from "../models/Customer";
 import { Call } from "../models/Call";
 
 // モックリポジトリの作成
