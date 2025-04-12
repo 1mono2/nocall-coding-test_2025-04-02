@@ -104,7 +104,7 @@ export class CustomerRepository implements ICustomerRepository {
 		// 顧客IDごとに変数をグループ化
 		const variablesByCustomerId = new Map<string, CustomerVariable[]>();
 
-		variablesData.forEach((v) => {
+		for (const v of variablesData) {
 			const customerId = v.customerId;
 			if (!variablesByCustomerId.has(customerId)) {
 				variablesByCustomerId.set(customerId, []);
@@ -113,7 +113,7 @@ export class CustomerRepository implements ICustomerRepository {
 			variablesByCustomerId
 				.get(customerId)
 				?.push(new CustomerVariable(v.id, v.customerId, v.key, v.value || ""));
-		});
+		}
 
 		// 顧客オブジェクトを作成
 		return customersData.map(

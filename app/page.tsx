@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { hc } from "hono/client";
 import { Pencil, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CustomerDTO } from "./dto/types";
 
 export default function Home() {
@@ -28,7 +28,7 @@ export default function Home() {
 	const client = hc<AppType>("/").api.v1;
 	const router = useRouter();
 
-	const fetchCustomers = async () => {
+	const fetchCustomers = useCallback(async () => {
 		try {
 			setLoading(true);
 			const response = await client.customers.$get();
@@ -39,11 +39,11 @@ export default function Home() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [client]);
 
 	useEffect(() => {
 		fetchCustomers();
-	}, []);
+	}, [fetchCustomers]);
 
 	const handleCreateCustomer = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -195,7 +195,7 @@ export default function Home() {
 									<td className="px-4 py-3 text-sm text-foreground/80">
 										{customer.variables &&
 										Object.keys(customer.variables).length > 0
-											? Object.keys(customer.variables).length + "個の変数"
+											? `${Object.keys(customer.variables).length}個の変数`
 											: "変数なし"}
 									</td>
 									<td className="px-4 py-3 text-right">

@@ -277,7 +277,7 @@ export const cancelCallHandler = factory.createHandlers(
 );
 
 // グローバルエラーハンドリング
-const errorHandler = (err: any, c: Context) => {
+const errorHandler = (err: Error, c: Context) => {
 	// ステータスコードとメッセージ初期値
 	let status: ContentfulStatusCode = 500;
 	let message = "Internal Server Error";
@@ -313,7 +313,7 @@ const errorHandler = (err: any, c: Context) => {
 const app = new Hono()
 	.basePath("/api/v1")
 	.get("/health", (c) => c.json({ message: "API is running" }, 200))
-	.get("/error", (c) => {
+	.get("/error", () => {
 		throw new HTTPException(400, { message: "Internal Server Error" });
 	})
 	// 顧客関連ルート

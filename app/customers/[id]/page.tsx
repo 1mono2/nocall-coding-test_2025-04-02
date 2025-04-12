@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { AppType } from "@/app/api/v1/routes";
 import type { CallDTO, CustomerDTO } from "@/app/dto/types";
@@ -36,7 +36,7 @@ export default function CustomerDetail() {
 	const client = hc<AppType>("/").api.v1;
 
 	// 顧客情報を取得
-	const fetchCustomer = async () => {
+	const fetchCustomer = useCallback(async () => {
 		try {
 			setLoading(true);
 			const response = await client.customers[":id"].$get({
@@ -50,10 +50,10 @@ export default function CustomerDetail() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [customerId, client]);
 
 	// 顧客のコール履歴を取得
-	const fetchCustomerCalls = async () => {
+	const fetchCustomerCalls = useCallback(async () => {
 		try {
 			const response = await client.customers[":id"].calls.$get({
 				param: { id: customerId },
@@ -63,12 +63,12 @@ export default function CustomerDetail() {
 		} catch (error) {
 			console.error("コールデータの取得中にエラーが発生しました:", error);
 		}
-	};
+	}, [customerId, client]);
 
 	useEffect(() => {
 		fetchCustomer();
 		fetchCustomerCalls();
-	}, [customerId]);
+	}, [fetchCustomer, fetchCustomerCalls]);
 
 	// 顧客情報を更新
 	const handleUpdateCustomer = async () => {
@@ -149,7 +149,7 @@ export default function CustomerDetail() {
 				},
 			});
 
-			const data = await response.json();
+			await response.json();
 			fetchCustomerCalls();
 		} catch (error) {
 			console.error("コール予約中にエラーが発生しました:", error);

@@ -16,9 +16,11 @@ export class CreateCustomerUseCase {
 		const customer = Customer.create(input.name, input.phoneNumber);
 
 		// 変数を設定
-		input.variables?.forEach((variable) => {
-			customer.setVariable(variable.key, variable.value);
-		});
+		if (input.variables) {
+			for (const variable of input.variables) {
+				customer.setVariable(variable.key, variable.value);
+			}
+		}
 
 		await this.customerRepo.save(customer);
 		return customer.customerId;

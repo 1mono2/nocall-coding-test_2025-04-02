@@ -33,9 +33,9 @@ export class Customer {
 		variables: CustomerVariable[] = [],
 	) {
 		// 変数をMapに格納
-		variables.forEach((variable) => {
+		for (const variable of variables) {
 			this._variables.set(variable.key, variable);
-		});
+		}
 	}
 
 	/**
