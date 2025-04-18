@@ -102,6 +102,7 @@ export class RequestCallUseCase {
   - **Tailwind CSS**: スタイルフレームワーク
   - **SQLite**: RDBMS
   - **Vitest**: テストフレームワーク
+  - **Biome.js**: リンター・フォーマッター（コード品質とスタイルの一貫性を確保）
 
 ### 6. フロントエンド要件
 - **基本構成**:
